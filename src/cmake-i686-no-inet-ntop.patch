@@ -1,0 +1,9 @@
+diff --git Utilities/cmThirdPartyChecks.cmake Utilities/cmThirdPartyChecks.cmake.new
+index 5605667..78bd60c 100644
+--- a/Utilities/cmThirdPartyChecks.cmake
++++ b/Utilities/cmThirdPartyChecks.cmake
+@@ -102,3 +102,3 @@ if(WIN32)
+   set(HAVE_IF_NAMETOINDEX 0)
+-  set(HAVE_INET_NTOP 1)
++  set(HAVE_INET_NTOP 0)
+   set(HAVE_INTTYPES_H 1)

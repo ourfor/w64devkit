@@ -1,0 +1,13 @@
+diff --git a/Source/cmake.cxx b/Source/cmake.cxx
+index b8ebca5eb5..453e7ce21f 100644
+--- a/Source/cmake.cxx
++++ b/Source/cmake.cxx
+@@ -2648,7 +2648,7 @@ std::unique_ptr<cmGlobalGenerator> cmake::EvaluateDefaultGlobalGenerator()
+   }
+   auto gen = this->CreateGlobalGenerator(found);
+   if (!gen) {
+-    gen = cm::make_unique<cmGlobalNMakeMakefileGenerator>(this);
++    gen = cm::make_unique<cmGlobalMinGWMakefileGenerator>(this);
+   }
+   return std::unique_ptr<cmGlobalGenerator>(std::move(gen));
+ #elif defined(CMAKE_BOOTSTRAP_NINJA)
