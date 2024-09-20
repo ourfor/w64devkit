@@ -17,9 +17,10 @@ ARG MPC_VERSION=1.3.1
 ARG MPFR_VERSION=4.2.1
 ARG PDCURSES_VERSION=3.9
 ARG VIM_VERSION=9.0
+ARG CMAKE_VERSION=3.27.0-rc4
 
 RUN apt-get update && apt-get install --yes --no-install-recommends \
-  build-essential curl libgmp-dev libmpc-dev libmpfr-dev m4 p7zip-full
+  build-essential curl libgmp-dev libmpc-dev libmpfr-dev m4 p7zip-full zip cmake
 
 # Download, verify, and unpack
 
@@ -38,7 +39,9 @@ RUN curl --insecure --location --remote-name-all --remote-header-name \
     http://ftp.vim.org/pub/vim/unix/vim-$VIM_VERSION.tar.bz2 \
     https://github.com/universal-ctags/ctags/archive/refs/tags/v$CTAGS_VERSION.tar.gz \
     https://downloads.sourceforge.net/project/mingw-w64/mingw-w64/mingw-w64-release/mingw-w64-v$MINGW_VERSION.tar.bz2 \
-    https://downloads.sourceforge.net/project/pdcurses/pdcurses/$PDCURSES_VERSION/PDCurses-$PDCURSES_VERSION.tar.gz
+    https://downloads.sourceforge.net/project/pdcurses/pdcurses/$PDCURSES_VERSION/PDCurses-$PDCURSES_VERSION.tar.gz \
+    https://github.com/danmar/cppcheck/archive/$CPPCHECK_VERSION.tar.gz \
+    https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION/cmake-$CMAKE_VERSION.tar.gz
 COPY src/SHA256SUMS $PREFIX/src/
 RUN sha256sum -c $PREFIX/src/SHA256SUMS \
  && tar xJf 7z$Z7_VERSION-src.tar.xz --xform 's%^%7z/%' \
@@ -55,10 +58,15 @@ RUN sha256sum -c $PREFIX/src/SHA256SUMS \
  && tar xzf make-$MAKE_VERSION.tar.gz \
  && tar xjf mingw-w64-v$MINGW_VERSION.tar.bz2 \
  && tar xzf PDCurses-$PDCURSES_VERSION.tar.gz \
- && tar xjf vim-$VIM_VERSION.tar.bz2
-COPY src/w64devkit.c src/w64devkit.ico src/libmemory.c src/libchkstk.S \
-     src/alias.c src/debugbreak.c src/pkg-config.c src/vc++filt.c \
-     src/peports.c src/profile $PREFIX/src/
+ && tar xJf nasm-$NASM_VERSION.tar.xz \
+ && tar xjf vim-$VIM_VERSION.tar.bz2 \
+ && tar xzf cppcheck-$CPPCHECK_VERSION.tar.gz \
+ && tar xzf cmake-$CMAKE_VERSION.tar.gz
+COPY src/w64devkit.c src/w64devkit.ico \
+     src/alias.c src/debugbreak.c src/pkg-config.c \
+     src/libmemory.c src/libchkstk.S src/vc++filt.c \
+     src/peports.c src/profile \
+     $PREFIX/src/
 
 ARG ARCH=x86_64-w64-mingw32
 
@@ -455,6 +463,24 @@ RUN sed -i s/CommCtrl/commctrl/ $(grep -Rl CommCtrl CPP/) \
  && sed -i s%7z\\.ico%$PREFIX/src/w64devkit.ico% \
            CPP/7zip/Bundles/SFXWin/resource.rc \
  && make -f $PREFIX/src/7z.mak -j$(nproc) CROSS=$ARCH-
+
+WORKDIR /cmake-$CMAKE_VERSION
+COPY src/cmake-*.patch $PREFIX/src/
+RUN cat $PREFIX/src/cmake-*.patch | patch -p1 \
+ && cmake \
+        -DCMAKE_SYSTEM_NAME=Windows \
+        -DCMAKE_C_COMPILER=$ARCH-gcc \
+        -DCMAKE_CXX_COMPILER=$ARCH-g++ \
+        -DCMAKE_USE_OPENSSL=OFF \
+        -DHAVE_LINUX_TCP_H=OFF \
+        -DHAVE_ARPA_INET_H=OFF \
+        -DHAVE_NETINET_IN_H=OFF \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DCMAKE_BUILD_TYPE=MinSizeRel \
+        -DCMAKE_EXE_LINKER_FLAGS="-static" \
+        -DCMAKE_INSTALL_PREFIX=$PREFIX \
+ && make -j$(nproc) \
+ && make install
 
 # Pack up a release
 
